@@ -1,19 +1,21 @@
 package controllers;
 
-import javax.annotation.Resource;
+
+import javax.activation.DataHandler;
+import javax.imageio.ImageIO;
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebService;
-import javax.sql.DataSource;
 import javax.xml.bind.annotation.XmlElement;
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.awt.*;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.xml.ws.soap.MTOM;
 
 import static controllers.ConnectionUtil.getConnection;
-
+@MTOM
 @WebService(serviceName = "PersonService")
 public class PersonWebService {
 
@@ -76,6 +78,37 @@ public class PersonWebService {
                             @WebParam(name = "id") @XmlElement(required = true) int id  ){
         UserDAO dao = new UserDAO(getConnection());
         return dao.updateUser(name,surname,number,email,password,id);
+    }
+
+    private Path path = Paths.get("C:\\Users\\antonAdmin\\OneDrive\\Рабочий стол\\test.jpeg");
+
+    @WebMethod(operationName = "uploadFile")
+    public void uploadFile(DataHandler file) {
+
+        try (InputStream input = file.getInputStream();
+             OutputStream output = new FileOutputStream(
+                     new File(path.toString()));) {
+
+            byte[] b = new byte[100000];
+            int bytesRead = 0;
+            while ((bytesRead = input.read(b)) != -1) {
+                output.write(b, 0, bytesRead);
+            }
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+    private Path path1 = Paths.get("C:\\Users\\antonAdmin\\OneDrive\\Рабочий стол\\_1fg38J0_qQ.jpg");
+
+    @WebMethod(operationName = "downloadFile")
+    public Image downloadImage() throws IOException {
+
+        File image = new File(path1.toString());
+        return  ImageIO.read(image);
+
     }
 
 
