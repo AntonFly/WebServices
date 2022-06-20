@@ -4,17 +4,23 @@ package controllers;
 import exceptions.NoSuchUserException;
 import exceptions.WrongEmailFormat;
 
+import javax.annotation.Resource;
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.ws.WebServiceContext;
+import javax.xml.ws.handler.MessageContext;
 import java.util.List;
+import java.util.Map;
 
 import static controllers.ConnectionUtil.getConnection;
 
 @WebService(serviceName = "PersonService")
 public class PersonWebService {
 
+    @Resource
+    WebServiceContext wsctx;
 
     @WebMethod(operationName = "getAllPersons")
     public List<User> getPersons() {
@@ -50,19 +56,24 @@ public class PersonWebService {
     }
 
     @WebMethod(operationName = "createPearson")
-    public int createUser(@WebParam(name = "name") @XmlElement(required = true) String name,
+    public String createUser(@WebParam(name = "name") @XmlElement(required = true) String name,
                           @WebParam(name = "surname") @XmlElement(required = true) String surname,
                           @WebParam(name = "phoneNumber") @XmlElement(required = true) int number,
                           @WebParam(name = "email") @XmlElement(required = true) String email,
                           @WebParam(name = "password") @XmlElement(required = true) String password){
         UserDAO dao = new UserDAO(getConnection());
-        return dao.createUser(name,surname,number,email,password);
+        if (getAuthString())
+            return String.valueOf(dao.createUser(name,surname,number,email,password));
+        else
+            return "Unknown User!";
     }
 
     @WebMethod(operationName = "deletePearson")
     public String deleteUser(@WebParam(name = "id") @XmlElement(required = true) int id){
-
-        return  new UserDAO(getConnection()).deleteUser(id);
+        if (getAuthString())
+            return  new UserDAO(getConnection()).deleteUser(id);
+        else
+            return "Unknown User!";
     }
 
     @WebMethod(operationName = "updatePearson")
@@ -73,9 +84,43 @@ public class PersonWebService {
                             @WebParam(name = "password")  String password,
                             @WebParam(name = "id") @XmlElement(required = true) int id  ){
         UserDAO dao = new UserDAO(getConnection());
-        return dao.updateUser(name,surname,number,email,password,id);
+        if (getAuthString())
+            return dao.updateUser(name,surname,number,email,password,id);
+        else
+            return "Unknown User!";
     }
 
+
+    public Boolean getAuthString() {
+
+        MessageContext mctx = wsctx.getMessageContext();
+
+        //get detail from request headers
+        Map http_headers = (Map) mctx.get(MessageContext.HTTP_REQUEST_HEADERS);
+        List userList = (List) http_headers.get("Username");
+        List passList = (List) http_headers.get("Password");
+
+        String username = "";
+        String password = "";
+
+        if(userList!=null){
+            //get username
+            username = userList.get(0).toString();
+        }
+
+        if(passList!=null){
+            //get password
+            password = passList.get(0).toString();
+        }
+
+        //Should validate username and password with database
+        if (username.equals("AVRA") && password.equals("AVRA")){
+            return true;
+        }else{
+            return false;
+        }
+
+    }
 
 
 

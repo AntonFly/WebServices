@@ -6,7 +6,9 @@ import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.WebResource;
 import org.example.User;
 
+import javax.naming.AuthenticationException;
 import javax.ws.rs.core.MediaType;
+import java.util.Base64;
 import java.util.List;
 
 public class Requests {
@@ -62,8 +64,7 @@ public class Requests {
         return response.getEntity(type);
     }
 
-    public static String createPerson(Client client, String URL, String name, String email , String surname, String phone)
-    {
+    public static String createPerson(Client client, String URL, String name, String email , String surname, String phone) throws AuthenticationException {
         WebResource webResource = client.resource(URL+"createPearson");
         if (name != null) {
             webResource = webResource.queryParam("name", name);
@@ -78,8 +79,12 @@ public class Requests {
             webResource = webResource.queryParam("email", email);
         }
         ClientResponse response =
-                webResource.accept(MediaType.APPLICATION_JSON).put(ClientResponse.class);
-
+                webResource
+                        .header("Authorization", "Basic " + createAuthString())
+                        .accept(MediaType.APPLICATION_JSON).put(ClientResponse.class);
+        if (response.getStatus() == ClientResponse.Status.UNAUTHORIZED.getStatusCode()) {
+            throw new AuthenticationException();
+        }
         if (response.getStatus() !=
                 ClientResponse.Status.OK.getStatusCode()) {
             throw new IllegalStateException("Request failed: "+ response.getStatus() + "\n\r"+ response.getEntity(String.class) );
@@ -89,14 +94,18 @@ public class Requests {
         return response.getEntity(String.class);
     }
 
-    public static String deletePerson(Client client, String URL, String id)
-    {
+    public static String deletePerson(Client client, String URL, String id) throws AuthenticationException {
         WebResource webResource = client.resource(URL+"deletePearson");
         if (id != null) {
             webResource = webResource.queryParam("id", id);
         }
         ClientResponse response =
-                webResource.accept(MediaType.APPLICATION_JSON).delete(ClientResponse.class);
+                webResource
+                        .header("Authorization", "Basic " + createAuthString())
+                        .accept(MediaType.APPLICATION_JSON).delete(ClientResponse.class);
+        if (response.getStatus() == ClientResponse.Status.UNAUTHORIZED.getStatusCode()) {
+            throw new AuthenticationException();
+        }
         if (response.getStatus() !=
                 ClientResponse.Status.OK.getStatusCode()) {
             throw new IllegalStateException("Request failed: "+ response.getStatus() + "\n\r"+ response.getEntity(String.class) );
@@ -105,7 +114,12 @@ public class Requests {
         return response.getEntity(String.class);
     }
 
-
+    private static String createAuthString() {
+        String username = "AVRA";
+        String password = "AVRA";
+        String authString = username + ":" + password;
+        return new String(Base64.getEncoder().encode(authString.getBytes()));
+    }
 
 
 

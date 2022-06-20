@@ -1,5 +1,6 @@
 package itmo.rs.standalone;
 
+import itmo.rs.standalone.exceptions.AuthException;
 import itmo.rs.standalone.exceptions.NoSuchUserException;
 import itmo.rs.standalone.exceptions.WrongEmailFormatException;
 
@@ -9,6 +10,8 @@ import javax.sql.DataSource;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.UnsupportedEncodingException;
+import java.util.Base64;
 import java.util.List;
 
 import static itmo.rs.standalone.ConnectionUtil.getConnection;
@@ -70,15 +73,18 @@ public class PersonService {
     public int createUser(@QueryParam("name") @XmlElement(required = true) String name,
                           @QueryParam("surname") @XmlElement(required = true) String surname,
                           @QueryParam("phoneNumber") @XmlElement(required = true) int number,
-                          @QueryParam("email") @XmlElement(required = true) String email
-                          ){
+                          @QueryParam("email") @XmlElement(required = true) String email,
+                          @HeaderParam("Authorization") String authString
+                          ) throws UnsupportedEncodingException, AuthException {
+        isUserAuthenticated(authString);
         UserDAO dao = new UserDAO(getConnection());
         return dao.createUser(name,surname,number,email);
     }
     @DELETE
     @Path("/deletePearson")
-    public String deleteUser(@QueryParam("id") @XmlElement(required = true) int id){
-
+    public String deleteUser(@QueryParam("id") @XmlElement(required = true) int id,
+                             @HeaderParam("Authorization") String authString) throws UnsupportedEncodingException, AuthException {
+        isUserAuthenticated(authString);
         return  new UserDAO(getConnection()).deleteUser(id);
     }
 
@@ -88,11 +94,23 @@ public class PersonService {
                              @QueryParam("surname")  String surname,
                              @QueryParam("phoneNumber")  int number,
                              @QueryParam("email")  String email,
-                             @QueryParam("id") @XmlElement(required = true) int id  ){
+                             @QueryParam("id") @XmlElement(required = true) int id,
+                             @HeaderParam("Authorization") String authString) throws UnsupportedEncodingException, AuthException {
         UserDAO dao = new UserDAO(getConnection());
+        isUserAuthenticated(authString);
         return dao.updateUser(name,surname,number,email,id);
     }
 
+    private void isUserAuthenticated(String authString) throws UnsupportedEncodingException, AuthException {
 
+        String[] tokens = (new String(Base64.getDecoder().decode(authString.split(" ")[1]), "UTF-8")).split(":");
+        final String username = tokens[0];
+        final String password = tokens[1];
+
+        if (!username.equals("AVRA") || !password.equals("AVRA")) {
+            throw AuthException.DEFAULT_INSTANCE;
+        }
+
+    }
 
 }

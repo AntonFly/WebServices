@@ -8,13 +8,13 @@ import com.sun.jersey.api.client.WebResource;
 import org.example.requests.Requests;
 
 import java.util.List;
+import javax.naming.AuthenticationException;
 import javax.ws.rs.core.MediaType;
 
 public class App 
 {
     private static final String URL = "http://localhost:8088/rest/Persons/";
-    public static void main( String[] args )
-    {
+    public static void main( String[] args ) throws AuthenticationException {
         Client client = Client.create();
         System.out.println("Get all person");
         printList(Requests.getAllPersons(client,URL));

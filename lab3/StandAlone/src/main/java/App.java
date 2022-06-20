@@ -1,5 +1,7 @@
 import controllers.PersonWebService;
+import mypackage.PersonService;
 
+import javax.wsdl.Port;
 import javax.xml.ws.Endpoint;
 
 public class App {
